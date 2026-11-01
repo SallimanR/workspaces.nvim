@@ -239,6 +239,16 @@ function M.new(opts)
 	return ws
 end
 
+---@param target string|workspaces.Workspace
+function M.switch(target)
+	local ws = type(target) == "table" and target or M.find(target)
+	if not ws or not api.nvim_tabpage_is_valid(ws.tab) then
+		notify(("no workspace '%s'"):format(tostring(target)), vim.log.levels.WARN)
+		return
+	end
+	api.nvim_set_current_tabpage(ws.tab)
+end
+
 ---------------------------------------------------------------------------
 -- Setup
 ---------------------------------------------------------------------------
