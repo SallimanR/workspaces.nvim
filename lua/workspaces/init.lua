@@ -249,6 +249,26 @@ function M.switch(target)
 	api.nvim_set_current_tabpage(ws.tab)
 end
 
+---@param step integer  1 = next, -1 = previous
+function M.cycle(step)
+	if #list == 0 then
+		return
+	end
+	local cur, idx = M.current(), 0
+	for i, ws in ipairs(list) do
+		if ws == cur then
+			idx = i
+		end
+	end
+	local n
+	if idx == 0 then
+		n = step > 0 and 1 or #list
+	else
+		n = ((idx - 1 + step) % #list) + 1
+	end
+	M.switch(list[n])
+end
+
 ---------------------------------------------------------------------------
 -- Setup
 ---------------------------------------------------------------------------
