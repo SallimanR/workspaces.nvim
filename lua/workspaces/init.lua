@@ -269,6 +269,21 @@ function M.cycle(step)
 	M.switch(list[n])
 end
 
+---@param old string
+---@param new string
+function M.rename(old, new)
+	local ws = M.find(old)
+	if not ws then
+		return notify(("no workspace '%s'"):format(old), vim.log.levels.WARN)
+	end
+	if M.find(new) then
+		return notify(("workspace '%s' already exists"):format(new), vim.log.levels.ERROR)
+	end
+	ws.name = new
+	api.nvim_tabpage_set_var(ws.tab, "workspace", new)
+	vim.cmd.redrawtabline()
+end
+
 ---------------------------------------------------------------------------
 -- Setup
 ---------------------------------------------------------------------------
