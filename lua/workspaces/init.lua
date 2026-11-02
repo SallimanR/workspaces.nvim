@@ -284,6 +284,74 @@ function M.rename(old, new)
 	vim.cmd.redrawtabline()
 end
 
+---@class workspaces.CloseOpts
+---@field force boolean?  discard unsaved changes
+---@field wipe boolean?   wipe the workspace's exclusive buffers (default: config.wipe_on_close)
+
+---@param name string?  defaults to the current workspace
+---@param opts workspaces.CloseOpts?
+---@return boolean
+function M.close(name, opts)
+	opts = opts or {}
+	local ws = name and M.find(name) or M.current()
+	if not ws then
+		notify("no such workspace", vim.log.levels.WARN)
+		return false
+	end
+	local wipe = opts.wipe
+	if wipe == nil then
+		wipe = M.config.wipe_buffers_on_close
+	end
+
+	-- buffers that only this workspace uses
+	local shared = {}
+	for _, o in ipairs(list) do
+		if o ~= ws then
+			for b in pairs(o.bufs) do
+				shared[b] = true
+			end
+		end
+	end
+	local doomed = {}
+	if wipe then
+		local dirty = {}
+		for _, b in ipairs(M.buffers(ws)) do
+			if not shared[b] then
+				doomed[#doomed + 1] = b
+				if vim.bo[b].modified then
+					dirty[#dirty + 1] = vim.fn.fnamemodify(api.nvim_buf_get_name(b), ":~:.")
+				end
+			end
+		end
+		if #dirty > 0 and not opts.force then
+			notify("unsaved changes in: " .. table.concat(dirty, ", ") .. " (use ! to discard)", vim.log.levels.ERROR)
+			return false
+		end
+	end
+
+	for i, w in ipairs(list) do
+		if w == ws then
+			table.remove(list, i)
+			break
+		end
+	end
+
+	if #api.nvim_list_tabpages() == 1 then
+		vim.cmd.tabnew() -- never close the last tab; leave a plain scratch tab behind
+	end
+	vim.cmd.tabclose({ args = { tostring(api.nvim_tabpage_get_number(ws.tab)) }, bang = true })
+
+	syncing = true
+	for _, b in ipairs(doomed) do
+		pcall(api.nvim_buf_delete, b, { force = true })
+	end
+	syncing = false
+
+	sync_listing(M.current())
+	fire("WorkspaceClosed", ws)
+	return true
+end
+
 ---------------------------------------------------------------------------
 -- Setup
 ---------------------------------------------------------------------------
