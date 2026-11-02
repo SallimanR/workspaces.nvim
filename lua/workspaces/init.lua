@@ -353,6 +353,33 @@ function M.close(name, opts)
 end
 
 ---------------------------------------------------------------------------
+-- UI
+---------------------------------------------------------------------------
+
+--- For statuslines: `%{%v:lua.require'workspaces'.statusline()%}`
+---@return string
+function M.statusline()
+	local ws = M.current()
+	return ws and ("[" .. ws.name .. "]") or ""
+end
+
+--- Tabline that labels tabs with their workspace name.
+---@return string
+function M.tabline()
+	local parts, cur = {}, api.nvim_get_current_tabpage()
+	for i, tab in ipairs(api.nvim_list_tabpages()) do
+		local ws = M.current(tab)
+		local label = ws and ws.name or ("tab " .. i)
+		parts[#parts + 1] = ("%s%%%dT %s %%T"):format(
+			tab == cur and "%#TabLineSel#" or "%#TabLine#",
+			i,
+			(label:gsub("%%", "%%%%"))
+		)
+	end
+	return table.concat(parts) .. "%#TabLineFill#"
+end
+
+---------------------------------------------------------------------------
 -- Setup
 ---------------------------------------------------------------------------
 
