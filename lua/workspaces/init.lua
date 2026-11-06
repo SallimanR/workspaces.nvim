@@ -353,6 +353,44 @@ function M.close(name, opts)
 end
 
 ---------------------------------------------------------------------------
+-- Pickers (vim.ui.select, compatible with any picker)
+---------------------------------------------------------------------------
+
+function M.select()
+	if #list == 0 then
+		return notify("no workspaces yet, create one with :Workspace new")
+	end
+	vim.ui.select(M.list(), {
+		prompt = "Workspace",
+		format_item = function(ws)
+			return ("%s%s  (%s)"):format(ws == M.current() and "* " or "  ", ws.name, vim.fn.fnamemodify(ws.root, ":~"))
+		end,
+	}, function(ws)
+		if ws then
+			M.switch(ws)
+		end
+	end)
+end
+
+function M.select_buffer()
+	local ws = M.current()
+	if not ws then
+		return notify("not in a workspace", vim.log.levels.WARN)
+	end
+	vim.ui.select(M.buffers(ws), {
+		prompt = "Buffers in " .. ws.name,
+		format_item = function(b)
+			local name = api.nvim_buf_get_name(b)
+			return vim.fs.relpath(ws.root, name) or vim.fn.fnamemodify(name, ":~")
+		end,
+	}, function(b)
+		if b then
+			api.nvim_set_current_buf(b)
+		end
+	end)
+end
+
+---------------------------------------------------------------------------
 -- UI
 ---------------------------------------------------------------------------
 
